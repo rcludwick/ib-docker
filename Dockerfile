@@ -1,5 +1,5 @@
-FROM ubuntu:16.04
-MAINTAINER Ryan Kennedy <hello@ryankennedy.io>
+FROM nvidia/cuda:8.0-cudnn6-devel-ubuntu16.04
+MAINTAINER Rob Ludwick
 
 RUN  apt-get update \
   && apt-get install -y wget \
@@ -11,19 +11,6 @@ RUN  apt-get update \
   && apt-get install -y socat \
   && apt-get install -y software-properties-common
 
-# Setup IB TWS
-RUN mkdir -p /opt/TWS
-WORKDIR /opt/TWS
-RUN wget -q http://data.quantconnect.com/interactive/ibgateway-latest-standalone-linux-x64-v960.2a.sh
-RUN chmod a+x ibgateway-latest-standalone-linux-x64-v960.2a.sh
-
-# Setup  IBController
-RUN mkdir -p /opt/IBController/
-WORKDIR /opt/IBController/
-RUN wget -q http://data.quantconnect.com/interactive/IBController-QuantConnect-3.2.0.zip
-RUN unzip ./IBController-QuantConnect-3.2.0.zip
-RUN chmod -R u+x *.sh && chmod -R u+x Scripts/*.sh
-
 # Install Java 8
 RUN \
   echo oracle-java8-installer shared/accepted-oracle-license-v1-1 select true | debconf-set-selections && \
@@ -33,12 +20,28 @@ RUN \
   rm -rf /var/lib/apt/lists/* && \
   rm -rf /var/cache/oracle-jdk8-installer
 
+# Setup IB TWS
+RUN mkdir -p /opt/TWS
+WORKDIR /opt/TWS
+RUN wget -q https://download2.interactivebrokers.com/installers/ibgateway/stable-standalone/ibgateway-stable-standalone-linux-x64.sh
+RUN chmod a+x ibgateway-stable-standalone-linux-x64.sh
+
+# Setup  IBController
+RUN mkdir -p /opt/IBController/
+WORKDIR /opt/IBController/
+RUN wget -q https://github.com/ib-controller/ib-controller/releases/download/3.4.0/IBController-3.4.0.zip
+RUN unzip ./IBController-3.4.0.zip
+RUN chmod -R u+x *.sh && chmod -R u+x Scripts/*.sh
+
+
 WORKDIR /
 
 # Install TWS
-RUN yes n | /opt/TWS/ibgateway-latest-standalone-linux-x64-v960.2a.sh
+RUN yes n | /opt/TWS/ibgateway-stable-standalone-linux-x64.sh
 
-#CMD yes
+# Remove temp files
+RUN rm -rf /opt/TWS
+RUN rm -f /opt/IBController/*.zip
 
 # Launch a virtual screen
 RUN Xvfb :1 -screen 0 1024x768x24 2>&1 >/dev/null &
