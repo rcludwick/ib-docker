@@ -9,7 +9,9 @@ RUN  apt-get update \
   && apt-get install -y libxrender1 \
   && apt-get install -y libxi6 \
   && apt-get install -y socat \
-  && apt-get install -y software-properties-common
+  && apt-get install -y software-properties-common \
+  && apt-get install -y x11vnc \
+  && apt-get install -y ratpoison
 
 # Install Java 8
 RUN \
@@ -23,8 +25,8 @@ RUN \
 # Setup IB TWS
 RUN mkdir -p /opt/TWS
 WORKDIR /opt/TWS
-RUN wget -q https://download2.interactivebrokers.com/installers/ibgateway/stable-standalone/ibgateway-stable-standalone-linux-x64.sh
-RUN chmod a+x ibgateway-stable-standalone-linux-x64.sh
+RUN wget http://cdn.quantconnect.com/interactive/ibgateway-latest-standalone-linux-x64-v968.2d.sh
+RUN chmod a+x ibgateway-latest-standalone-linux-x64-v968.2d.sh
 
 # Setup  IBController
 RUN mkdir -p /opt/IBController/
@@ -37,15 +39,23 @@ RUN chmod -R u+x *.sh && chmod -R u+x Scripts/*.sh
 WORKDIR /
 
 # Install TWS
-RUN yes n | /opt/TWS/ibgateway-stable-standalone-linux-x64.sh
+RUN yes n | /opt/TWS/ibgateway-latest-standalone-linux-x64-v968.2d.sh
 
 # Remove temp files
-RUN rm -rf /opt/TWS
+RUN rm -rf /opt/TWS/*.sh
 RUN rm -f /opt/IBController/*.zip
 
 # Launch a virtual screen
-RUN Xvfb :1 -screen 0 1024x768x24 2>&1 >/dev/null &
-RUN export DISPLAY=:1
+RUN Xvfb :0 -screen 0 1024x768x24 2>&1 >/dev/null &
+RUN export DISPLAY=:0
+
+
+# XNVC
+COPY vnc_init /etc/init.d/x11vnc
+RUN chmod u+x /etc/init.d/x11vnc
+
+# Install Ratpoison 
+RUN apt-get install -y ratpoison
 
 ADD runscript.sh runscript.sh
 CMD bash runscript.sh
